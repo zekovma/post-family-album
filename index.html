@@ -1,0 +1,143 @@
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Fullscreen Liquify Background with Countdown</title>
+  <style>
+    html, body {
+      margin: 0; padding: 0; overflow: hidden; height: 100%;
+      background: #000;
+      color: #ff3b3b;
+      user-select: none;
+    }
+    canvas {
+      display: block;
+    }
+  </style>
+  <!-- Load Orbitron font from Google Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500&display=swap" rel="stylesheet">
+</head>
+<body>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.0/p5.min.js"></script>
+<script>
+  let img;
+  let graphics;
+  let imgRatio;
+  let scaledWidth, scaledHeight;
+  let customFont;
+
+  const targetDate = new Date('2025-06-27T19:00:00');
+
+  function preload() {
+    img = loadImage('https://cdn.glitch.global/8edda74e-43da-4706-8f0d-e9d33058260e/motion-array-2863058-g05lXDZ6VO-high_0003.jpg?v=1749687240912');
+    customFont = loadFont('https://cdn.glitch.global/8edda74e-43da-4706-8f0d-e9d33058260e/Steps-Mono.otf?v=1749691331073'); // Orbitron Medium (hosted by Google)
+  }
+
+  function setup() {
+    createCanvas(windowWidth, windowHeight);
+    pixelDensity(1);
+    graphics = createGraphics(width, height);
+    imageMode(CENTER);
+
+    imgRatio = img.width / img.height;
+    if (width / height > imgRatio) {
+      scaledWidth = width;
+      scaledHeight = width / imgRatio;
+    } else {
+      scaledHeight = height;
+      scaledWidth = height * imgRatio;
+    }
+
+    textAlign(CENTER, CENTER);
+    textFont(customFont);
+    textSize(48);
+    noStroke();
+  }
+
+  function draw() {
+    background(0);
+    graphics.clear();
+
+    graphics.loadPixels();
+    img.loadPixels();
+
+    for (let y = 0; y < height; y++) {
+      for (let x = 0; x < width; x++) {
+        let imgCoordX = floor(map(x, 0, width, 0, img.width));
+        let imgCoordY = floor(map(y, 0, height, 0, img.height));
+
+        let dx = x - mouseX;
+        let dy = y - mouseY;
+        let distToMouse = sqrt(dx * dx + dy * dy);
+        let maxDist = 150;
+        let intensity = 30;
+
+        let offsetX = 0;
+        let offsetY = 0;
+
+        if (distToMouse < maxDist) {
+          let angle = atan2(dy, dx);
+          let force = (maxDist - distToMouse) / maxDist;
+          offsetX = cos(angle + frameCount * 0.1) * intensity * force;
+          offsetY = sin(angle + frameCount * 0.1) * intensity * force;
+        }
+
+        let sx = constrain(floor(imgCoordX + offsetX), 0, img.width - 1);
+        let sy = constrain(floor(imgCoordY + offsetY), 0, img.height - 1);
+
+        let srcIndex = (sx + sy * img.width) * 4;
+        let dstIndex = (x + y * width) * 4;
+
+        graphics.pixels[dstIndex]     = img.pixels[srcIndex];
+        graphics.pixels[dstIndex + 1] = img.pixels[srcIndex + 1];
+        graphics.pixels[dstIndex + 2] = img.pixels[srcIndex + 2];
+        graphics.pixels[dstIndex + 3] = 255;
+      }
+    }
+
+    graphics.updatePixels();
+    image(graphics, width / 2, height / 2);
+
+    // Countdown overlay
+    fill(255, 59, 59);
+    textFont(customFont);
+    textSize(32);
+    text('Thank you for visiting.', width / 2, height / 2 - 80);
+
+    const now = new Date();
+    let diff = targetDate - now;
+
+    if (diff < 0) {
+      textSize(48);
+      text('If you´d like to collaborate, contact m2zkstudio@gmail.com', width / 2, height / 2);
+      return;
+    }
+
+    let seconds = floor(diff / 1000) % 60;
+    let minutes = floor(diff / (1000 * 60)) % 60;
+    let hours = floor(diff / (1000 * 60 * 60)) % 24;
+    let days = floor(diff / (1000 * 60 * 60 * 24));
+
+    const fmt = n => n < 10 ? '0' + n : n;
+    let countdownText = `${days}d ${fmt(hours)}h ${fmt(minutes)}m ${fmt(seconds)}s`;
+
+    textSize(64);
+    text(countdownText, width / 2, height / 2);
+  }
+
+  function windowResized() {
+    resizeCanvas(windowWidth, windowHeight);
+    graphics = createGraphics(width, height);
+
+    if (width / height > imgRatio) {
+      scaledWidth = width;
+      scaledHeight = width / imgRatio;
+    } else {
+      scaledHeight = height;
+      scaledWidth = height * imgRatio;
+    }
+  }
+</script>
+
+</body>
+</html>
